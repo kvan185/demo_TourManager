@@ -1,170 +1,101 @@
-/api/employees/:id/schedules
+# 🧭 Demo Tour Manager
 
-USER
-http://localhost:8088/api/auth/register
-http://localhost:8088/api/customers/me
-http://localhost:8088/api/customers/update
-http://localhost:8088/api/bookings/add
-http://localhost:8088/api/bookings/my
-http://localhost:8088/api/payments/add
-http://localhost:8088/api/invoices/my
-http://localhost:8088/api/reviews/add
-http://localhost:8088/api/reviews/add
-http://localhost:8088/api/reviews/my
-http://localhost:8088/api/support/contact
-http://localhost:8088
+Dự án **Tour Manager** gồm hai phần chính:
+- **Backend (BE):** Xây dựng bằng Node.js (Express)
+- **Frontend (FE):** Xây dựng bằng React + Vite
 
+---
 
-Cac api đã dùng ở FE
-ADMIN
+## ⚙️ 1. Cài đặt cơ sở dữ liệu MySQL
 
-GET:
-http://localhost:8088/api/admin/users
-http://localhost:8088/api/admin/tours
-http://localhost:8088/api/admin/locations
-http://localhost:8088/api/admin/services
+### 🔸 Bước 1: Tạo cơ sở dữ liệu
+Mở MySQL (vd: MySQL Workbench hoặc terminal) và chạy lệnh:
+```sql
+CREATE DATABASE travel_app CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
 
+### 🔸 Bước 2: Import dữ liệu mẫu
+Trong thư mục dự án, tìm file:
+```
+BE/sql/travel_app.sql
+```
 
-POST:
-http://localhost:8088/api/admin/users/add-user
-http://localhost:8088/api/admin/users/add-user
-http://localhost:8088/api/admin/locations/add-location
-http://localhost:8088/api/admin/services/add-service
+Chạy lệnh import:
+```bash
+mysql -u root -p travel_app < BE/sql/travel_app.sql
+```
+> ⚠️ Thay `root` và `password` bằng tài khoản MySQL của bạn.
 
+---
 
-PUT:
-http://localhost:8088/api/admin/users/id
-http://localhost:8088/api/admin/tours/id
-http://localhost:8088/api/admin/locations/id
-http://localhost:8088/api/admin/services/id
+## 💻 2. Chạy Backend (BE)
 
+Từ thư mục gốc, di chuyển vào thư mục BE:
+```bash
+cd BE
+```
 
-DELETE:
-http://localhost:8088/api/admin/users/id
-http://localhost:8088/api/admin/tours/id
-http://localhost:8088/api/admin/locations/id
-http://localhost:8088/api/admin/services/id
+Cài đặt thư viện:
+```bash
+npm install
+```
 
+Chạy server:
+```bash
+npm run dev
+```
 
+> Mặc định server chạy tại: **http://localhost:5000**
 
+---
 
+## 🌐 3. Chạy Frontend (FE)
 
-/api/admin/reports
-/api/admin/custom-tour-destinations
-/api/admin/custom-tour-services
-/api/admin/custom-tour-guides
+Từ thư mục gốc, di chuyển vào thư mục FE:
+```bash
+cd FE
+```
 
+Cài đặt thư viện:
+```bash
+npm install
+```
 
+Chạy ứng dụng:
+```bash
+npm run dev
+```
 
-Cac api chưa dùng ở FE
-GET:
-http://localhost:8088/api/admin/customers
-http://localhost:8088/api/admin/customers/:id
-http://localhost:8088/api/admin/employees
-http://localhost:8088/api/admin/employees/:id
-http://localhost:8088/api/admin/tour-schedules
-http://localhost:8088/api/admin/tour-schedules/:id
-http://localhost:8088/api/admin/permissions
-http://localhost:8088/api/admin/roles
-http://localhost:8088/api/admin/tour-services
-http://localhost:8088/api/admin/tour-services/tour/:tour_id
-http://localhost:8088/api/admin/tour-guides
-http://localhost:8088/api/admin/tour-guides/schedule/:schedule_id
-http://localhost:8088/api/admin/bookings
-http://localhost:8088/api/admin/bookings/:id
-http://localhost:8088/api/admin/booking-passengers
-http://localhost:8088/api/admin/booking-passengers/booking/:booking_id
-http://localhost:8088/api/admin/payments
-http://localhost:8088/api/admin/payments/booking/:booking_id
-http://localhost:8088/api/admin/invoices
-http://localhost:8088/api/admin/invoices/:id
-http://localhost:8088/api/admin/invoices/booking/:booking_id
-http://localhost:8088/api/admin/reviews
-http://localhost:8088/api/admin/reviews/tour/:tour_id
-http://localhost:8088/api/admin/reviews/guide/:guide_id
-http://localhost:8088/api/admin/employee-schedules
-http://localhost:8088/api/admin/employee-schedules/:id
-http://localhost:8088/api/admin/custom-tours
-http://localhost:8088/api/admin/custom-tours/:id
-<!-- http://localhost:8088/api/admin/custom-tours -->
+> Mặc định frontend chạy tại: **http://localhost:5173**
 
+---
 
-POST:
-http://localhost:8088/api/admin/customers/add-customer
-http://localhost:8088/api/admin/employees/add-employee
-http://localhost:8088/api/admin/tour-schedules/tour-schedule
-http://localhost:8088/api/admin/permissions/add-permission
-http://localhost:8088/api/admin/roles/add-role
-http://localhost:8088/api/admin/tour-services/add-tour-service
-http://localhost:8088/api/admin/tour-guides/add-tour-guide
-http://localhost:8088/api/admin/bookings/add-booking
-http://localhost:8088/api/admin/booking-passengers/add-passenger
-http://localhost:8088/api/admin/payments/add-payment
-http://localhost:8088/api/admin/invoices/add-invoice
-http://localhost:8088/api/admin/reviews/add-review
-http://localhost:8088/api/admin/employee-schedules/add
-http://localhost:8088/api/admin/custom-tours/add
+## 📁 4. Cấu trúc thư mục
 
+```
+demo_TourManager/
+│
+├── BE/                   # Backend (Node.js + Express)
+│   ├── sql/              # File SQL cho MySQL
+│   ├── routes/           # API routes
+│   ├── models/           # Models cho database
+│   └── server.js         # File khởi chạy server
+│
+├── FE/                   # Frontend (React + Vite)
+│   ├── src/              # Mã nguồn React
+│   └── package.json
+│
+└── README.md             # Hướng dẫn cài đặt
+```
 
+---
 
-PUT:
-http://localhost:8088/api/admin/customers/:id
-http://localhost:8088/api/admin/employees/:id
-http://localhost:8088/api/admin/tour-schedules/:id
-http://localhost:8088/api/admin/roles/:id
-http://localhost:8088/api/admin/tour-services/:id
-http://localhost:8088/api/admin/tour-guides/:id
-http://localhost:8088/api/admin/tour-guides/:id
-http://localhost:8088/api/admin/bookings/:id
-http://localhost:8088/api/admin/booking-passengers/:id
-http://localhost:8088/api/admin/payments/:id
-http://localhost:8088/api/admin/invoices/:id
-http://localhost:8088/api/admin/reviews/add-review
-http://localhost:8088/api/admin/reviews/:id
-http://localhost:8088/api/admin/employee-schedules/:id
-http://localhost:8088//api/admin/custom-tours/:id
-http://localhost:8088/
-http://localhost:8088/
-http://localhost:8088/
+## 🧪 5. Ghi chú
+- Đảm bảo MySQL đang chạy trước khi start backend.  
+- Nếu thay đổi cấu hình database, chỉnh trong `BE/config/db.js`.  
+- Sử dụng Node.js >= 18 và npm >= 9 để đảm bảo tương thích.
 
-DELETE:
-http://localhost:8088/api/admin/customers/:id
-http://localhost:8088/api/admin/employees/:id
-http://localhost:8088/api/admin/tour-schedules/:id
-http://localhost:8088/api/admin/tour-services/:id
-http://localhost:8088/api/admin/tour-guides/:id
-http://localhost:8088/api/admin/bookings/:id
-http://localhost:8088/api/admin/booking-passengers/:id
-http://localhost:8088/api/admin/payments/:id
-http://localhost:8088/api/admin/invoices/:id
-http://localhost:8088/api/admin/reviews/:id
-http://localhost:8088/api/admin/employee-schedules/:id
-http://localhost:8088/api/admin/employee-schedules/employee/:employeeId
-http://localhost:8088/api/admin/custom-tours/:id
-http://localhost:8088
-http://localhost:8088
-http://localhost:8088
+---
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+✨ **Tác giả:** Khánh Văn  
+📅 **Repo:** [github.com/kvan185/demo_TourManager](https://github.com/kvan185/demo_TourManager)
