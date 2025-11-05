@@ -15,7 +15,7 @@ import {
 } from "@mui/material";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import FooterUser from "../../components/footer/FooterUser"; // nếu có
+import FooterUser from "../../components/footer/FooterUser";
 
 function MyBookings() {
   const [bookings, setBookings] = useState([]);
@@ -23,6 +23,30 @@ function MyBookings() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+
+  // ✅ Hàm dịch trạng thái sang tiếng Việt
+  const translateStatus = (status) => {
+    switch (status) {
+      case "pending":
+        return "⏳ Chờ xác nhận";
+      case "confirmed":
+        return "✅ Đã xác nhận";
+      case "cancelled":
+        return "❌ Đã hủy";
+      case "completed":
+        return "🏁 Hoàn thành";
+      default:
+        return status;
+    }
+  };
+
+  // ✅ Hàm format tiền VND
+  const formatVND = (amount) =>
+    new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+      minimumFractionDigits: 0,
+    }).format(amount || 0);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -50,7 +74,7 @@ function MyBookings() {
 
     try {
       await axios.put(
-        `http://localhost:8088/api/bookings/${bookingId}/cancel`,
+        `http://localhost:8088/api/auth/booking/${bookingId}/cancel`,
         {},
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
@@ -102,7 +126,7 @@ function MyBookings() {
                   <TableCell>Tên tour</TableCell>
                   <TableCell>Người lớn</TableCell>
                   <TableCell>Trẻ em</TableCell>
-                  <TableCell>Tổng tiền (VNĐ)</TableCell>
+                  <TableCell>Tổng tiền</TableCell>
                   <TableCell>Trạng thái</TableCell>
                   <TableCell>Hành động</TableCell>
                 </TableRow>
@@ -114,8 +138,8 @@ function MyBookings() {
                     <TableCell>{b.tour_title || "Tour #" + b.tour_id}</TableCell>
                     <TableCell>{b.qty_adults}</TableCell>
                     <TableCell>{b.qty_children}</TableCell>
-                    <TableCell>{b.total_amount.toLocaleString()}</TableCell>
-                    <TableCell>{b.status}</TableCell>
+                    <TableCell>{formatVND(b.total_amount)}</TableCell>
+                    <TableCell>{translateStatus(b.status)}</TableCell>
                     <TableCell>
                       {b.status === "cancelled" ? (
                         <Typography color="text.secondary">Đã hủy</Typography>

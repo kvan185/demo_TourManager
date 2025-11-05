@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
 import {
   Container,
   Typography,
@@ -9,32 +8,64 @@ import {
   Paper,
   Grid,
   Alert,
+  Collapse,
+  Card,
+  CardContent,
+  CardMedia,
 } from "@mui/material";
-import HeaderUser from "../../components/header/HeaderUser";
+import { useParams, useNavigate } from "react-router-dom";
 import FooterUser from "../../components/footer/FooterUser";
-import userApi from "../../api/userApi";
+import adminApi from "../../api/adminApi";
+import axios from "axios";
 
 export default function TourDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [tour, setTour] = useState(null);
+  const [schedules, setSchedules] = useState([]);
+  const [guides, setGuides] = useState([]);
+  const [services, setServices] = useState([]);
+  const [images, setImages] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showServices, setShowServices] = useState(false);
+
+  const API_URL = "http://localhost:8088/api/tours";
 
   useEffect(() => {
-    const fetchTour = async () => {
+    const fetchTourDetail = async () => {
       try {
-        const res = await userApi.getTourDetail(id);
-        setTour(res.data);
+        // 🧭 Lấy chi tiết tour
+        const res = await axios.get(`${API_URL}/${id}/detail`);
+        const data = res.data;
+
+        setTour(data.tour);
+        setSchedules(data.schedules || []);
+        setGuides(data.guides || []);
+        setServices(data.services || []);
+
+        // 🖼️ Lấy ảnh theo cách của TourManager
+        const imgsRes = await adminApi.getTourImages(id);
+        setImages(imgsRes.data || []);
       } catch (err) {
-        setError("Không thể tải thông tin tour. Vui lòng thử lại sau!");
-        console.error("Lỗi tải tour:", err);
+        console.error("❌ Lỗi khi tải chi tiết tour:", err);
+        setError("Không thể tải thông tin tour");
       } finally {
         setLoading(false);
       }
     };
-    fetchTour();
+
+    fetchTourDetail();
   }, [id]);
+
+  const formatVND = (value) =>
+    new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+      minimumFractionDigits: 0,
+    }).format(value || 0);
 
   if (loading)
     return (
@@ -52,81 +83,175 @@ export default function TourDetail() {
       </Container>
     );
 
-  if (!tour)
-    return (
-      <Container sx={{ mt: 6 }}>
-        <Typography color="text.secondary" align="center">
-          Không tìm thấy tour này.
-        </Typography>
-      </Container>
-    );
+  if (!tour) return null;
 
   return (
     <>
-      <HeaderUser />
       <Container sx={{ py: 6 }}>
-        <Paper elevation={3} sx={{ p: 4 }}>
+        <Paper sx={{ p: 4 }}>
           <Typography variant="h4" fontWeight="bold" gutterBottom>
             {tour.title}
           </Typography>
-          <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-            Mã tour: {tour.code || "Không có"} | Thời gian: {tour.duration_days} ngày
-          </Typography>
 
-          <Grid container spacing={3} sx={{ mt: 2 }}>
-            <Grid item xs={12} md={6}>
-              <img
-                src={
-                  tour.image_url ||
-                  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e"
-                }
-                alt={tour.title}
-                style={{
-                  width: "100%",
-                  borderRadius: "8px",
-                  objectFit: "cover",
-                  maxHeight: 380,
-                }}
-              />
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <Typography paragraph>
-                <strong>Giá tour:</strong>{" "}
-                <span style={{ color: "#1976d2", fontWeight: "bold" }}>
-                  {tour.price?.toLocaleString()} VNĐ
-                </span>
-              </Typography>
-              <Typography paragraph>
-                <strong>Địa điểm chính:</strong> {tour.main_location_name || "Chưa xác định"}
-              </Typography>
-              <Typography paragraph>
-                <strong>Mô tả ngắn:</strong> {tour.short_description || "Chưa có mô tả"}
-              </Typography>
-              <Typography paragraph>
-                <strong>Trạng thái:</strong>{" "}
-                {tour.status === "active" ? "Đang mở đặt" : "Tạm dừng"}
-              </Typography>
-
-              <Button
-                variant="contained"
-                color="primary"
-                sx={{ mt: 3, py: 1.3 }}
-                onClick={() => navigate(`/book/${tour.id}`)}
-              >
-                Đặt tour ngay
-              </Button>
-            </Grid>
+          {/* 🖼️ Ảnh tour (đọc từ API giống TourManager) */}
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            {images?.length > 0 ? (
+              images.map((img) => (
+                <Grid item xs={12} md={4} key={img.id}>
+                  <img
+                    src={`http://localhost:8088/${img.img_url}`}
+                    alt={img.alt_text || "Tour image"}
+                    style={{
+                      width: "100%",
+                      height: "250px",
+                      objectFit: "cover",
+                      borderRadius: "8px",
+                    }}
+                  />
+                </Grid>
+              ))
+            ) : (
+              <Grid item xs={12}>
+                <img
+                  src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e"
+                  alt="default"
+                  style={{
+                    width: "100%",
+                    height: "300px",
+                    borderRadius: "8px",
+                    objectFit: "cover",
+                  }}
+                />
+              </Grid>
+            )}
           </Grid>
 
-          {tour.description && (
-            <Box sx={{ mt: 5 }}>
-              <Typography variant="h6" fontWeight="bold" gutterBottom>
-                📋 Chi tiết hành trình
+          {/* 🧾 Thông tin tour */}
+          <Typography paragraph>
+            <strong>Giá:</strong>{" "}
+            <span style={{ color: "#1976d2", fontWeight: "bold" }}>
+              {formatVND(tour.price)}
+            </span>
+          </Typography>
+          <Typography paragraph>
+            <strong>Thời lượng:</strong> {tour.duration_days} ngày
+          </Typography>
+          <Typography paragraph>
+            <strong>Địa điểm:</strong> {tour.main_location_name || "Chưa rõ"}
+          </Typography>
+          <Typography paragraph>
+            <strong>Mô tả:</strong> {tour.short_description || "Chưa có mô tả"}
+          </Typography>
+
+          <Button
+            variant="contained"
+            color="primary"
+            sx={{ mt: 2, mr: 2 }}
+            onClick={() => navigate(`/book/${tour.id}`)}
+          >
+            Đặt tour ngay
+          </Button>
+
+          <Button
+            variant="outlined"
+            color="secondary"
+            sx={{ mt: 2 }}
+            onClick={() => setShowServices(!showServices)}
+          >
+            {showServices ? "Ẩn phương tiện" : "🚍 Phương tiện & Dịch vụ"}
+          </Button>
+
+          {/* 🚍 Dịch vụ & Phương tiện */}
+          <Collapse in={showServices} sx={{ mt: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              🚍 Dịch vụ & Phương tiện
+            </Typography>
+            <Grid container spacing={2}>
+              {services?.length > 0 ? (
+                services.map((sv) => (
+                  <Grid item xs={12} md={4} key={sv.id}>
+                    <Card sx={{ height: "100%" }}>
+                      {sv.img_url && (
+                        <CardMedia
+                          component="img"
+                          height="160"
+                          image={`http://localhost:8088/${sv.img_url}`}
+                          alt={sv.name}
+                        />
+                      )}
+                      <CardContent>
+                        <Typography variant="h6">{sv.name}</Typography>
+                        <Typography color="text.secondary">
+                          Loại: {sv.type}
+                        </Typography>
+                        <Typography color="text.secondary">
+                          Nhà cung cấp: {sv.provider}
+                        </Typography>
+                        <Typography color="text.primary" sx={{ mt: 1 }}>
+                          Giá: {formatVND(sv.price)}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))
+              ) : (
+                <Typography color="text.secondary" sx={{ ml: 2 }}>
+                  Không có dịch vụ kèm theo.
+                </Typography>
+              )}
+            </Grid>
+          </Collapse>
+
+          {/* 🗓️ Lịch khởi hành */}
+          <Box sx={{ mt: 5 }}>
+            <Typography variant="h6" gutterBottom>
+              🗓️ Lịch khởi hành
+            </Typography>
+            {schedules.length === 0 ? (
+              <Typography color="text.secondary">
+                Chưa có lịch khởi hành nào.
               </Typography>
-              <Typography color="text.secondary">{tour.description}</Typography>
-            </Box>
-          )}
+            ) : (
+              schedules.map((sc) => (
+                <Box
+                  key={sc.id}
+                  sx={{
+                    border: "1px solid #ddd",
+                    borderRadius: "8px",
+                    p: 2,
+                    mb: 2,
+                  }}
+                >
+                  <Typography>
+                    📅 {sc.start_date} → {sc.end_date}
+                  </Typography>
+                  <Typography>
+                    💺 {sc.seats_booked}/{sc.seats_total} chỗ | Giá:{" "}
+                    {formatVND(sc.price_per_person)}
+                  </Typography>
+                  <Typography>Trạng thái: {sc.status}</Typography>
+                </Box>
+              ))
+            )}
+          </Box>
+
+          {/* 🧑‍🏫 Hướng dẫn viên */}
+          <Box sx={{ mt: 5 }}>
+            <Typography variant="h6" gutterBottom>
+              🧑‍🏫 Hướng dẫn viên
+            </Typography>
+            {guides.length === 0 ? (
+              <Typography color="text.secondary">
+                Chưa có hướng dẫn viên.
+              </Typography>
+            ) : (
+              guides.map((g, i) => (
+                <Typography key={i}>
+                  👤 {g.full_name} ({g.phone}) — {g.role}
+                </Typography>
+              ))
+            )}
+          </Box>
         </Paper>
       </Container>
       <FooterUser />

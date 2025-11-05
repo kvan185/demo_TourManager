@@ -101,9 +101,9 @@ VALUES
 -- === EMPLOYEES ===
 INSERT INTO employees (user_id, full_name, phone, status)
 VALUES
-(1, 'Trần Thị B', '0909888777', 'active'),
-(2, 'Trần Thị B', '0909888777', 'active'),
-(3, 'Trần Thị B', '0909888777', 'active'),
+(1, 'Trần Thị Bình', '0909888777', 'active'),
+(2, 'Trần Hoàn Anh', '0909888777', 'active'),
+(3, 'Phan Thị B', '0909888777', 'active'),
 (4, 'Lê Văn C', '0911222333', 'active'),
 (5, 'Phạm Minh D', '0988666555', 'active');
 
@@ -126,37 +126,65 @@ VALUES
 (1, '2025-11-10', '2025-11-12', 30, 5, 3600000, 'open'),
 (2, '2025-12-05', '2025-12-08', 25, 10, 4600000, 'open');
 
+-- === TOUR ITINERARIES: Lịch trình chi tiết theo ngày ===
+INSERT INTO tour_itineraries (tour_id, day_number, title, description)
+VALUES
+-- 🔹 Tour 1: Hà Nội 3N2Đ
+(1, 1, 'Ngày 1: Văn Miếu – Hồ Hoàn Kiếm', 
+ 'Đón khách tại khách sạn, tham quan Văn Miếu Quốc Tử Giám, hồ Hoàn Kiếm và phố cổ. Ăn tối tại nhà hàng Sen Hồ Tây.'),
+(1, 2, 'Ngày 2: Phố cổ Hà Nội – Chùa Trấn Quốc', 
+ 'Buổi sáng dạo phố cổ, thưởng thức phở Hà Nội. Chiều tham quan chùa Trấn Quốc và Hồ Tây.'),
+(1, 3, 'Ngày 3: Làng gốm Bát Tràng – Kết thúc tour', 
+ 'Tham quan làng gốm truyền thống Bát Tràng, trải nghiệm làm gốm thủ công, sau đó tiễn khách ra sân bay.'),
+
+-- 🔹 Tour 2: Đà Nẵng - Hội An 4N3Đ
+(2, 1, 'Ngày 1: Bà Nà Hills – Cầu Vàng', 
+ 'Tham quan khu du lịch Bà Nà Hills, chụp ảnh tại Cầu Vàng, ăn tối tại khách sạn.'),
+(2, 2, 'Ngày 2: Biển Mỹ Khê – Ngũ Hành Sơn', 
+ 'Buổi sáng tắm biển Mỹ Khê, chiều tham quan chùa Linh Ứng và mua sắm đặc sản.'),
+(2, 3, 'Ngày 3: Phố cổ Hội An – Đêm đèn lồng', 
+ 'Khám phá phố cổ Hội An, dạo phố, ăn tối bên sông Hoài, thưởng thức ẩm thực địa phương.'),
+(2, 4, 'Ngày 4: Chợ Hàn – Tiễn khách', 
+ 'Mua sắm tại chợ Hàn, sau đó đưa khách ra sân bay. Kết thúc chương trình.');
+
 -- === SERVICES ===
 INSERT INTO services (type, name, provider, details, price)
 VALUES
 ('hotel', 'Khách sạn Mường Thanh', 'Mường Thanh Group', 'Phòng đôi 3 sao', 800000),
 ('bus', 'Xe du lịch 29 chỗ', 'Mai Linh Travel', 'Xe đưa đón sân bay và city tour', 500000),
-('restaurant', 'Nhà hàng Sen Hồ Tây', 'Sen Group', 'Buffet đặc sản Hà Nội', 300000);
+('restaurant', 'Nhà hàng Sen Hồ Tây', 'Sen Group', 'Buffet đặc sản Hà Nội', 300000),
+('hotel', 'Khách sạn Minh Toàn', 'Minh Toàn Group', 'Phòng đôi 4 sao tại trung tâm Đà Nẵng', 900000);
 
 -- === TOUR SERVICES ===
 INSERT INTO tour_services (tour_id, service_id, qty, note)
 VALUES
 (1, 1, 3, '3 đêm khách sạn Mường Thanh'),
-(1, 2, 1, 'Xe di chuyển suốt tuyến'),
-(1, 3, 2, '2 bữa buffet');
+(1, 2, 1, 'Xe di chuyển trong thành phố'),
+(1, 3, 2, '2 bữa buffet'),
+(2, 4, 3, '3 đêm khách sạn Minh Toàn'),
+(2, 2, 1, 'Xe di chuyển suốt tuyến');
 
 -- === TOUR GUIDES ===
 INSERT INTO tour_guides (schedule_id, employee_id, role)
 VALUES
-(1, 1, 'lead guide');
+(1, 1, 'lead guide'),
+(1, 3, 'assistant guide'),
+(2, 1, 'lead guide'),
+(2, 2, 'assistant guide');
 
 -- === BOOKINGS ===
 INSERT INTO bookings (booking_code, customer_id, schedule_id, qty_adults, qty_children, total_amount, status, payment_status, note)
 VALUES
 ('BK001', 1, 1, 2, 1, 10800000, 'confirmed', 'paid', 'Gia đình có trẻ nhỏ'),
-('BK002', 1, 2, 1, 0, 4600000, 'pending', 'unpaid', NULL);
+('BK002', 1, 2, 1, 0, 4600000, 'pending', 'unpaid', 'Khách lẻ');
 
 -- === BOOKING PASSENGERS ===
 INSERT INTO booking_passengers (booking_id, full_name, gender, birth_date, passport_number, seat_type, price)
 VALUES
-(1, 'Nguyễn Văn A', 'male', '1995-04-12', 'C1234567', 'Người lớn', 3600000),
-(1, 'Trần Thị E', 'female', '1997-09-21', 'D7654321', 'Người lớn', 3600000),
-(1, 'Nguyễn Văn F', 'male', '2015-01-15', NULL, 'Trẻ em', 1800000);
+(1, 'Nguyễn Văn A', 'male', '1990-05-10', 'C1234567', 'Người lớn', 3600000),
+(1, 'Trần Thị B', 'female', '1993-09-15', 'D7654321', 'Người lớn', 3600000),
+(1, 'Nguyễn Văn C', 'male', '2015-01-15', NULL, 'Trẻ em', 1800000),
+(2, 'Phạm Văn D', 'male', '1987-03-21', 'E999888', 'Người lớn', 4600000);
 
 -- === PAYMENTS ===
 INSERT INTO payments (booking_id, paid_by_user_id, amount, method, transaction_ref, status)

@@ -106,6 +106,16 @@ CREATE TABLE tour_schedules (
   CONSTRAINT fk_schedule_tour FOREIGN KEY (tour_id) REFERENCES tours(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- tour_itineraries: lịch trình chi tiết theo ngày
+CREATE TABLE tour_itineraries (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  tour_id BIGINT NOT NULL,
+  day_number INT NOT NULL,
+  title VARCHAR(255),
+  description TEXT,
+  CONSTRAINT fk_itinerary_tour FOREIGN KEY (tour_id) REFERENCES tours(id) ON DELETE CASCADE,
+);ENGINE=InnoDB
+
 -- services
 CREATE TABLE services (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -156,6 +166,7 @@ CREATE TABLE custom_tours (
   CONSTRAINT fk_custom_tour_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- custom_tour_destinations
 CREATE TABLE custom_tour_destinations (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   custom_tour_id BIGINT NOT NULL,
@@ -166,6 +177,7 @@ CREATE TABLE custom_tour_destinations (
   CONSTRAINT fk_ctd_location FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- custom_tour_services
 CREATE TABLE custom_tour_services (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   custom_tour_id BIGINT NOT NULL,
@@ -176,6 +188,7 @@ CREATE TABLE custom_tour_services (
   CONSTRAINT fk_cts_service FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- custom_tour_guides
 CREATE TABLE custom_tour_guides (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   custom_tour_id BIGINT NOT NULL,
@@ -307,4 +320,3 @@ CREATE TABLE service_images (
 ) ENGINE=InnoDB;
 
 SET FOREIGN_KEY_CHECKS = 1;
-

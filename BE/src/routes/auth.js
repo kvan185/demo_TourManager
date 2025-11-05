@@ -163,13 +163,30 @@ router.put("/test", async (req, res) => {
 });
 
 // --- MY BOOKINGS ---
-router.get("/my-booking", async (req, res) => {
+router.get("/my-booking", verifyToken, async (req, res) => {
   try {
-    // const userId =1 || req.user.id; // ✅ Lấy từ token
+    const userId = req.user.id;
 
     const [rows] = await pool.query(
-      `SELECT * FROM bookings WHERE customer_id = 1`,
-      // [req.user.id]
+      `
+      SELECT 
+        b.id,
+        b.booking_code,
+        b.qty_adults,
+        b.qty_children,
+        b.total_amount,
+        b.status,
+        b.payment_status,
+        b.booking_date,
+        t.title AS tour_title,
+        c.full_name AS customer_name
+      FROM bookings b
+      JOIN customers c ON b.customer_id = c.id
+      LEFT JOIN tours t ON b.schedule_id = t.id
+      WHERE c.user_id = ?
+      ORDER BY b.booking_date DESC
+      `,
+      [userId]
     );
 
     res.json(rows);
@@ -180,20 +197,32 @@ router.get("/my-booking", async (req, res) => {
 });
 
 // --- CANCEL BOOKING ---
-router.put("/cancel-booking/:id", verifyToken, async (req, res) => {
+router.put("/booking/:id/cancel", verifyToken, async (req, res) => {
   try {
-    const userId = req.user.id;
-    const bookingId = req.params.id;
+    const userId = req.user.id;       // ID người dùng từ token
+    const bookingId = req.params.id;  // ID booking từ URL
 
-    // Xác nhận booking thuộc về người dùng
+    // 🔹 Kiểm tra xem booking này có thuộc về user hiện tại không
     const [check] = await pool.query(
-      "SELECT id FROM bookings WHERE id = ? AND customer_id = ?",
+      `
+      SELECT b.id
+      FROM bookings b
+      JOIN customers c ON b.customer_id = c.id
+      WHERE b.id = ? AND c.user_id = ?
+      `,
       [bookingId, userId]
     );
-    if (!check.length)
-      return res.status(403).json({ message: "Không có quyền hủy booking này" });
 
-    await pool.query("UPDATE bookings SET status = 'cancelled' WHERE id = ?", [bookingId]);
+    if (!check.length) {
+      return res.status(403).json({ message: "❌ Không có quyền hủy booking này" });
+    }
+
+    // 🔹 Cập nhật trạng thái sang 'cancelled'
+    await pool.query(
+      "UPDATE bookings SET status = 'cancelled' WHERE id = ?",
+      [bookingId]
+    );
+
     res.json({ message: "✅ Hủy tour thành công!" });
   } catch (err) {
     console.error("❌ Lỗi hủy booking:", err);

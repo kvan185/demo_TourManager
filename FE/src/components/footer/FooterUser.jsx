@@ -55,11 +55,6 @@ export default function FooterUser() {
           </div>
         </div>
       </div>
-
-      {/* --- Dòng cuối cùng --- */}
-      <div className="footer-bottom">
-        © {new Date().getFullYear()} TravelBooking. All rights reserved.
-      </div>
     </footer>
   );
 }
