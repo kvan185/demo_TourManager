@@ -11,7 +11,18 @@ router.get('/', async (req, res) => {
   const page = Math.max(1, Number(req.query.page) || 1);
   const perPage = Math.min(100, Number(req.query.per_page) || 10);
   const offset = (page - 1) * perPage;
-  const [rows] = await pool.query('SELECT id, code, title, price, duration_days, status FROM tours LIMIT ? OFFSET ?', [perPage, offset]);
+  const [rows] = await pool.query(
+      `SELECT 
+        t.id, t.code, t.title, t.short_description, t.price, t.duration_days, 
+        t.status, l.name AS location_name,
+        (SELECT img_url FROM tour_images WHERE tour_id = t.id LIMIT 1) AS main_image
+      FROM tours t
+      LEFT JOIN locations l ON t.main_location_id = l.id
+      WHERE t.status = 'published'
+      ORDER BY t.created_at DESC
+      LIMIT ? OFFSET ?`,
+      [perPage, offset]
+    );
   res.json({data: rows, page, perPage});
 });
 

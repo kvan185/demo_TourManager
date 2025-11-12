@@ -5,6 +5,8 @@ import jwt from "jsonwebtoken";
 import { pool } from "../db.js";
 import { verifyToken } from "../middlewares/authMiddleware.js";
 import dotenv from "dotenv";
+import nodemailer from "nodemailer";
+
 dotenv.config();
 
 const router = express.Router();
@@ -140,6 +142,63 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// --- STEP 1: gửi email reset password ---
+router.post("/forgot-password", async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: "Vui lòng nhập email" });
+
+  try {
+    const [users] = await pool.query("SELECT id FROM users WHERE email = ?", [email]);
+    if (!users.length) return res.status(404).json({ message: "Email không tồn tại" });
+
+    const user = users[0];
+    const token = jwt.sign(
+      { id: user.id },
+      process.env.JWT_SECRET,
+      { expiresIn: "15m" } // token 15 phút
+    );
+
+    // Tạo link reset password
+    const resetLink = `http://localhost:5173/reset-password?token=${token}`;
+
+    // Gửi email (sử dụng nodemailer)
+    const transporter = nodemailer.createTransport({
+      service: "Gmail",
+      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+    });
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Yêu cầu đặt lại mật khẩu",
+      html: `<p>Nhấn vào link để đặt lại mật khẩu:</p><a href="${resetLink}">${resetLink}</a>`
+    });
+
+    res.json({ message: "Đã gửi email đặt lại mật khẩu" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Lỗi máy chủ" });
+  }
+});
+
+router.post("/reset-password", async (req, res) => {
+  const { token, newPassword } = req.body;
+  if (!token || !newPassword) return res.status(400).json({ message: "Thiếu token hoặc mật khẩu mới" });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id;
+
+    const hash = await bcrypt.hash(newPassword, 10);
+    await pool.query("UPDATE users SET password_hash = ? WHERE id = ?", [hash, userId]);
+
+    res.json({ message: "Đổi mật khẩu thành công" });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({ message: "Token không hợp lệ hoặc đã hết hạn" });
+  }
+});
+
 // --- PROFILE ---
 router.get("/profile", verifyToken, async (req, res) => {
   try {
@@ -157,6 +216,66 @@ router.get("/profile", verifyToken, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+// --- UPDATE PROFILE ---
+router.put("/profile", verifyToken, async (req, res) => {
+  try {
+    const { full_name, phone, gender, address } = req.body;
+
+    // cập nhật bảng customers
+    await pool.query(
+      `UPDATE customers SET full_name = ?, phone = ?, gender = ?, address = ? 
+       WHERE user_id = ?`,
+      [full_name, phone, gender, address, req.user.id]
+    );
+
+    // trả lại profile mới
+    const [rows] = await pool.query(
+      `SELECT u.id, u.email, u.role_id, c.full_name, c.phone, c.gender, c.address
+       FROM users u
+       LEFT JOIN customers c ON c.user_id = u.id
+       WHERE u.id = ?`,
+      [req.user.id]
+    );
+
+    res.json(rows[0]);
+  } catch (error) {
+    console.error("Update profile error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// --- CHANGE PASSWORD ---
+router.put("/change-password", verifyToken, async (req, res) => {
+  console.log("REQ USER:", req.user);
+  console.log("BODY:", req.body);
+  try {
+    const { currentPassword, newPassword } = req.body;
+    console.log("current:", currentPassword, "new:", newPassword);
+    const [rows] = await pool.query("SELECT password_hash FROM users WHERE id = ?", [req.user.id]);
+
+    console.log("DB row:", rows[0]);
+
+    if (rows.length === 0)
+      return res.status(404).json({ message: "User not found" });
+
+    const valid = await bcrypt.compare(currentPassword, rows[0].password_hash);
+    if (!valid)
+      return res.status(400).json({ message: "Mật khẩu hiện tại không đúng" });
+
+    const newHash = await bcrypt.hash(newPassword, 10);
+    await pool.query("UPDATE users SET password_hash = ? WHERE id = ?", [
+      newHash,
+      req.user.id,
+    ]);
+
+    res.json({ message: "Đổi mật khẩu thành công" });
+  } catch (error) {
+    console.error("Change password error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 router.put("/test", async (req, res) => {
   res.json({ message: "✅ Token hợp lệ!" });

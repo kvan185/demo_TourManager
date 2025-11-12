@@ -113,8 +113,8 @@ CREATE TABLE tour_itineraries (
   day_number INT NOT NULL,
   title VARCHAR(255),
   description TEXT,
-  CONSTRAINT fk_itinerary_tour FOREIGN KEY (tour_id) REFERENCES tours(id) ON DELETE CASCADE,
-);ENGINE=InnoDB
+  CONSTRAINT fk_itinerary_tour FOREIGN KEY (tour_id) REFERENCES tours(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
 
 -- services
 CREATE TABLE services (

@@ -182,7 +182,6 @@ export default function EmployeeManager() {
               <th>Email</th>
               <th>Họ tên</th>
               <th>Loại</th>
-              <th>Chức vụ</th>
               <th>Điện thoại</th>
               <th>Trạng thái</th>
               <th>Hành động</th>
