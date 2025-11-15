@@ -5,7 +5,6 @@ import { AuthProvider } from "./context/AuthContext";
 // ===== ADMIN PAGES =====
 import LocationManager from "./pages/admin/LocationManager";
 import ServiceManager from "./pages/admin/ServiceManager";
-import UserManager from "./pages/admin/UserManager";
 import TourManager from "./pages/admin/TourManager";
 import CustomerManager from "./pages/admin/CustomerManager";
 import EmployeeManager from "./pages/admin/EmployeeManager";
@@ -26,6 +25,8 @@ import MyBookings from "./pages/user/MyBookings";
 import Contact from "./pages/user/Contact";
 import About from "./pages/user/About";
 import Profile from "./pages/user/Profile";
+import ForgotPassword from "./pages/user/ForgotPassword";
+import ResetPassword from "./pages/user/ResetPassword";
 
 // ===== LAYOUTS =====
 import AdminLayout from "./components/layout/AdminLayout";
@@ -48,7 +49,6 @@ export default function App() {
             <Route path="/admin/employees" element={<EmployeeManager />} />
             <Route path="/admin/bookings" element={<BookingManager />} />
             <Route path="/admin/services" element={<ServiceManager />} />
-            <Route path="/admin/users" element={<UserManager />} />
             <Route path="/admin/locations" element={<LocationManager />} />
             <Route path="/admin/customers" element={<CustomerManager />} />
             <Route path="/admin/role-permissions" element={<RolePermissionList />} />
@@ -66,6 +66,8 @@ export default function App() {
             <Route path="/tours" element={<TourList />} />
             <Route path="/tour/:id" element={<TourDetail />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
           </Route>
         </Routes>
       </Router>

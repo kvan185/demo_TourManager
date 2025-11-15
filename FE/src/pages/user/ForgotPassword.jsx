@@ -21,8 +21,8 @@ export default function ForgotPassword() {
       setMessage(res.data.message || "Đã gửi email đặt lại mật khẩu!");
       setLoading(false);
 
-      // Optional: chuyển về login sau 3s
-      setTimeout(() => navigate("/login"), 5173);
+      // Chuyển về login sau 3s
+      setTimeout(() => navigate("/login"), 3000);
     } catch (err) {
       setError(err.response?.data?.message || "Lỗi khi gửi email");
       setLoading(false);

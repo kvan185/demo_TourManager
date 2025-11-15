@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Container, TextField, Button, Typography, Box, Alert } from "@mui/material";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function ResetPassword() {
   const [newPassword, setNewPassword] = useState("");
@@ -10,9 +10,10 @@ export default function ResetPassword() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Lấy token từ URL: ?token=xxxx
-  const params = new URLSearchParams(window.location.search);
+  // Lấy token từ query string ?token=xxxx
+  const params = new URLSearchParams(location.search);
   const token = params.get("token");
 
   const handleSubmit = async (e) => {
@@ -29,7 +30,6 @@ export default function ResetPassword() {
         token,
         newPassword,
       });
-
       setMessage(res.data.message || "Đổi mật khẩu thành công!");
       setLoading(false);
 

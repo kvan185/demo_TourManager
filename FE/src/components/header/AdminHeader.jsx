@@ -20,7 +20,6 @@ export default function AdminHeader() {
     manage_tours: { path: "/admin/tours", label: "Tour" },
     manage_services: { path: "/admin/services", label: "Dịch vụ" },
     manage_locations: { path: "/admin/locations", label: "Địa điểm" },
-    manage_users: { path: "/admin/users", label: "Người dùng" },
     manage_customers: { path: "/admin/customers", label: "Khách hàng" },
     manage_employees: { path: "/admin/employees", label: "Nhân viên" },
     manage_bookings: { path: "/admin/bookings", label: "Đặt tour" },

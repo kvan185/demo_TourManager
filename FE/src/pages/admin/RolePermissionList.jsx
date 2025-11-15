@@ -3,9 +3,18 @@ import adminApi from "../../api/adminApi";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import { Checkbox } from "../../components/ui/checkbox";
 import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Checkbox,
+  FormControlLabel,
+  Grid,
+  Typography,
+  TextField,
+} from "@mui/material";
 
 export default function RolePermissionList() {
   const [roles, setRoles] = useState([]);
@@ -14,6 +23,7 @@ export default function RolePermissionList() {
   const [rolePerms, setRolePerms] = useState([]);
   const [editParent, setEditParent] = useState(null);
   const [childPerms, setChildPerms] = useState([]);
+  const [showAddRoleDialog, setShowAddRoleDialog] = useState(false);
   const [newRole, setNewRole] = useState({ name: "", description: "" });
 
   // === FETCH DATA ===
@@ -43,6 +53,7 @@ export default function RolePermissionList() {
       await adminApi.addRole(newRole);
       toast.success("Thêm vai trò thành công!");
       setNewRole({ name: "", description: "" });
+      setShowAddRoleDialog(false);
       fetchAll();
     } catch {
       toast.error("Lỗi khi thêm vai trò!");
@@ -74,6 +85,7 @@ export default function RolePermissionList() {
   const closeAllPanels = () => {
     setEditParent(null);
     setSelectedRole(null);
+    setShowAddRoleDialog(false);
   };
 
   const handleSaveRolePerms = async () => {
@@ -92,181 +104,171 @@ export default function RolePermissionList() {
     );
   };
 
-  // === POPUP ANIMATION ===
-  const popupMotion = {
-    initial: { y: 30, opacity: 0, scale: 0.95 },
-    animate: { y: 0, opacity: 1, scale: 1 },
-    exit: { y: 30, opacity: 0, scale: 0.95 },
-    transition: { duration: 0.3, ease: "easeOut" },
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <motion.div
-        className="max-w-6xl mx-auto p-8"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <h2 className="text-2xl font-bold mb-6 text-gray-700 flex items-center gap-2">
-          🧩 Quản lý Vai trò & Quyền hệ thống
-        </h2>
+    <div className="min-h-screen bg-gray-50 p-8 max-w-6xl mx-auto">
+      <Typography variant="h4" gutterBottom color="primary">
+        🧩 Quản lý Vai trò & Quyền hệ thống
+      </Typography>
 
-        {/* === ROLE LIST === */}
-        <Card className="mb-8 shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex justify-between items-center">
-              📘 Danh sách Vai trò
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleAddRole} className="flex gap-2 mb-4">
-              <Input
-                placeholder="Tên vai trò"
-                value={newRole.name}
-                onChange={(e) => setNewRole({ ...newRole, name: e.target.value })}
-                required
-              />
-              <Input
-                placeholder="Mô tả"
-                value={newRole.description}
-                onChange={(e) =>
-                  setNewRole({ ...newRole, description: e.target.value })
-                }
-              />
-              <Button type="submit">➕ Thêm</Button>
-            </form>
-
-            <table className="w-full text-sm border rounded-lg overflow-hidden">
-              <thead className="bg-gray-100 text-left">
-                <tr>
-                  <th className="p-2 border">ID</th>
-                  <th className="p-2 border">Tên</th>
-                  <th className="p-2 border">Mô tả</th>
-                  <th className="p-2 border">Hành động</th>
-                </tr>
-              </thead>
-              <tbody>
-                {roles.map((r) => (
-                  <tr key={r.id} className="hover:bg-gray-50">
-                    <td className="p-2 border">{r.id}</td>
-                    <td className="p-2 border">{r.name}</td>
-                    <td className="p-2 border">{r.description}</td>
-                    <td className="p-2 border space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => fetchRolePerms(r.id)}>
-                        ⚙️ Quyền
-                      </Button>
-                      <Button variant="destructive" size="sm" onClick={() => handleDeleteRole(r.id)}>
-                        🗑️ Xóa
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
-
-        {/* === PARENT PERMISSIONS === */}
-        <Card className="mb-8 shadow-sm">
-          <CardHeader>
-            <CardTitle>🔐 Danh sách Quyền hệ thống</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <table className="w-full text-sm border rounded-lg overflow-hidden">
-              <thead className="bg-gray-100 text-left">
-                <tr>
-                  <th className="p-2 border">#</th>
-                  <th className="p-2 border">Tên quyền cha</th>
-                  <th className="p-2 border">Số quyền con</th>
-                  <th className="p-2 border">Hành động</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(groupedPerms).map(([parent, childs], i) => (
-                  <tr key={parent} className="hover:bg-gray-50">
-                    <td className="p-2 border">{i + 1}</td>
-                    <td className="p-2 border font-semibold">{parent}</td>
-                    <td className="p-2 border">{childs.length}</td>
-                    <td className="p-2 border">
-                      <Button size="sm" onClick={() => openChildPanel(parent)}>
-                        ✏️ Chỉnh sửa
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      {/* === POPUPS === */}
-      <AnimatePresence>
-        {(selectedRole || editParent) && (
-          <motion.div
-            className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="bg-white rounded-2xl shadow-2xl p-6 w-[600px] max-h-[80vh] overflow-y-auto"
-              {...popupMotion}
-            >
-              {/* === ROLE PERMISSIONS === */}
-              {selectedRole && (
-                <>
-                  <h3 className="text-xl font-bold mb-4 text-blue-700">
-                    ⚙️ Gán quyền cho Vai trò ID: {selectedRole}
-                  </h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    {permissions.map((p) => (
-                      <label key={p.id} className="flex items-center gap-2">
-                        <Checkbox
-                          checked={rolePerms.includes(p.id)}
-                          onCheckedChange={() => handleTogglePerm(p.id)}
-                        />
-                        <span>{p.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <div className="flex justify-end mt-6 gap-3">
-                    <Button onClick={handleSaveRolePerms}>💾 Lưu</Button>
-                    <Button variant="outline" onClick={closeAllPanels}>
-                      ✖ Đóng
+      {/* === ROLE LIST === */}
+      <Card className="mb-8 shadow-sm">
+        <CardHeader>
+          <CardTitle className="flex justify-between items-center">
+            📘 Danh sách Vai trò
+            <Button size="small" onClick={() => setShowAddRoleDialog(true)}>
+              ➕ Thêm vai trò
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <table className="w-full text-sm border rounded-lg overflow-hidden">
+            <thead className="bg-gray-100 text-left">
+              <tr>
+                <th className="p-2 border">ID</th>
+                <th className="p-2 border">Tên</th>
+                <th className="p-2 border">Mô tả</th>
+                <th className="p-2 border">Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+              {roles.map((r) => (
+                <tr key={r.id} className="hover:bg-gray-50">
+                  <td className="p-2 border">{r.id}</td>
+                  <td className="p-2 border">{r.name}</td>
+                  <td className="p-2 border">{r.description}</td>
+                  <td className="p-2 border space-x-2">
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => fetchRolePerms(r.id)}
+                    >
+                      ⚙️ Quyền
                     </Button>
-                  </div>
-                </>
-              )}
-
-              {/* === CHILD PERMISSIONS === */}
-              {editParent && (
-                <>
-                  <h3 className="text-xl font-bold mb-4 text-green-700">
-                    ✏️ Quyền con của <b>{editParent}</b>
-                  </h3>
-                  <div className="space-y-2">
-                    {childPerms.map((c) => (
-                      <div
-                        key={c.id}
-                        className="flex justify-between items-center border p-2 rounded hover:bg-gray-50 transition"
-                      >
-                        <span>{c.name}</span>
-                        <span className="text-gray-500 text-sm">{c.description}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex justify-end mt-6">
-                    <Button variant="outline" onClick={closeAllPanels}>
-                      ✖ Đóng
+                    <Button
+                      variant="contained"
+                      color="error"
+                      size="small"
+                      onClick={() => handleDeleteRole(r.id)}
+                    >
+                      🗑️ Xóa
                     </Button>
-                  </div>
-                </>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
+
+      {/* === PARENT PERMISSIONS === */}
+      <Card className="mb-8 shadow-sm">
+        <CardHeader>
+          <CardTitle>🔐 Danh sách Quyền hệ thống</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <table className="w-full text-sm border rounded-lg overflow-hidden">
+            <thead className="bg-gray-100 text-left">
+              <tr>
+                <th className="p-2 border">#</th>
+                <th className="p-2 border">Tên quyền cha</th>
+                <th className="p-2 border">Số quyền con</th>
+                <th className="p-2 border">Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(groupedPerms).map(([parent, childs], i) => (
+                <tr key={parent} className="hover:bg-gray-50">
+                  <td className="p-2 border">{i + 1}</td>
+                  <td className="p-2 border font-semibold">{parent}</td>
+                  <td className="p-2 border">{childs.length}</td>
+                  <td className="p-2 border">
+                    <Button size="small" onClick={() => openChildPanel(parent)}>
+                      ✏️ Chỉnh sửa
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
+
+      {/* === POPUP DIALOG === */}
+      {/* Thêm vai trò */}
+      <Dialog open={showAddRoleDialog} onClose={closeAllPanels} maxWidth="sm" fullWidth>
+        <form onSubmit={handleAddRole}>
+          <DialogTitle>➕ Thêm vai trò mới</DialogTitle>
+          <DialogContent dividers>
+            <TextField
+              label="Tên vai trò"
+              fullWidth
+              margin="normal"
+              value={newRole.name}
+              onChange={(e) => setNewRole({ ...newRole, name: e.target.value })}
+              required
+            />
+            <TextField
+              label="Mô tả"
+              fullWidth
+              margin="normal"
+              value={newRole.description}
+              onChange={(e) => setNewRole({ ...newRole, description: e.target.value })}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button type="submit">💾 Thêm</Button>
+            <Button variant="outlined" onClick={closeAllPanels}>
+              ✖ Đóng
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      {/* ROLE PERMISSIONS */}
+      <Dialog open={!!selectedRole} onClose={closeAllPanels} maxWidth="md" fullWidth>
+        <DialogTitle>⚙️ Gán quyền cho Vai trò ID: {selectedRole}</DialogTitle>
+        <DialogContent dividers>
+          <Grid container spacing={1}>
+            {permissions.map((p) => (
+              <Grid item xs={6} key={p.id}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={rolePerms.includes(p.id)}
+                      onChange={() => handleTogglePerm(p.id)}
+                    />
+                  }
+                  label={p.name}
+                />
+              </Grid>
+            ))}
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleSaveRolePerms}>💾 Lưu</Button>
+          <Button variant="outlined" onClick={closeAllPanels}>
+            ✖ Đóng
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* CHILD PERMISSIONS */}
+      <Dialog open={!!editParent} onClose={closeAllPanels} maxWidth="sm" fullWidth>
+        <DialogTitle>✏️ Quyền con của {editParent}</DialogTitle>
+        <DialogContent dividers>
+          {childPerms.map((c) => (
+            <div key={c.id} className="flex justify-between items-center border p-2 rounded mb-2">
+              <span>{c.name}</span>
+              <span className="text-gray-500 text-sm">{c.description}</span>
+            </div>
+          ))}
+        </DialogContent>
+        <DialogActions>
+          <Button variant="outlined" onClick={closeAllPanels}>
+            ✖ Đóng
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }

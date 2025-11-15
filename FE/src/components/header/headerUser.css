@@ -5,7 +5,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 40px;
+  padding: 12px 24px;    /* FIX */
+  box-sizing: border-box; /* FIX */
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
@@ -58,7 +59,6 @@
   background-color: #f0f0f0;
 }
 
-/* Responsive (mobile) */
 @media (max-width: 768px) {
   .header-user {
     flex-direction: column;

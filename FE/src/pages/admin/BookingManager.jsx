@@ -1,23 +1,49 @@
 import React, { useEffect, useState } from "react";
 import adminApi from "../../api/adminApi";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
+  Typography,
+} from "@mui/material";
 
 export default function BookingManager() {
   const [bookings, setBookings] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [tours, setTours] = useState([]);
-  const [editItem, setEditItem] = useState(null);
   const [message, setMessage] = useState("");
 
-  // 🧩 Form thêm mới
-  const [customerId, setCustomerId] = useState("");
-  const [tourId, setTourId] = useState("");
-  const [qtyAdults, setQtyAdults] = useState(1);
-  const [qtyChildren, setQtyChildren] = useState(0);
-  const [status, setStatus] = useState("pending");
-  const [paymentStatus, setPaymentStatus] = useState("unpaid");
-  const [totalAmount, setTotalAmount] = useState(0);
+  // Phân trang
+  const [page, setPage] = useState(1);
+  const rowsPerPage = 5; // số dòng mỗi trang
 
-  // 🔹 Lấy dữ liệu ban đầu
+  // --- Popup xem chi tiết / edit ---
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+
+  // --- Popup thêm mới ---
+  const [openAdd, setOpenAdd] = useState(false);
+
+  // --- Form thêm / edit ---
+  const [form, setForm] = useState({
+    id: null,
+    customer_id: "",
+    tour_id: "",
+    qty_adults: 1,
+    qty_children: 0,
+    total_amount: 0,
+    status: "pending",
+    payment_status: "unpaid",
+  });
+
+  // --- Lấy dữ liệu ---
   const fetchData = async () => {
     try {
       const [b, c, t] = await Promise.all([
@@ -37,46 +63,29 @@ export default function BookingManager() {
     fetchData();
   }, []);
 
-  // 🔹 Thêm booking
-  const handleAdd = async (e) => {
-    e.preventDefault();
+  // --- Thêm booking ---
+  const handleAdd = async () => {
     try {
-      await adminApi.addBooking({
-        customer_id: customerId,
-        tour_id: tourId,
-        qty_adults: qtyAdults,
-        qty_children: qtyChildren,
-        total_amount: totalAmount,
-        status,
-        payment_status: paymentStatus,
-      });
+      await adminApi.addBooking(form);
       setMessage("✅ Thêm đơn đặt thành công!");
-      setCustomerId("");
-      setTourId("");
-      setQtyAdults(1);
-      setQtyChildren(0);
-      setTotalAmount(0);
-      setStatus("pending");
-      setPaymentStatus("unpaid");
+      setOpenAdd(false);
+      setForm({
+        id: null,
+        customer_id: "",
+        tour_id: "",
+        qty_adults: 1,
+        qty_children: 0,
+        total_amount: 0,
+        status: "pending",
+        payment_status: "unpaid",
+      });
       fetchData();
     } catch (err) {
       setMessage("❌ Lỗi: " + (err.response?.data?.message || "Không thể thêm booking"));
     }
   };
 
-  // 🔹 Cập nhật booking
-  const handleSave = async (id) => {
-    try {
-      await adminApi.updateBooking(id, editItem);
-      setMessage("✅ Cập nhật thành công!");
-      setEditItem(null);
-      fetchData();
-    } catch {
-      setMessage("❌ Lỗi khi cập nhật!");
-    }
-  };
-
-  // 🔹 Xóa booking
+  // --- Xóa booking ---
   const handleDelete = async (id) => {
     if (window.confirm("Bạn có chắc muốn xóa đơn đặt này?")) {
       await adminApi.deleteBooking(id);
@@ -84,125 +93,223 @@ export default function BookingManager() {
     }
   };
 
+  // --- Mở popup xem chi tiết ---
+  const openDetail = (b) => {
+    setSelectedBooking({ ...b });
+    setIsEditing(false);
+  };
+
+  // --- Cập nhật booking ---
+  const handleSave = async () => {
+    try {
+      await adminApi.updateBooking(selectedBooking.id, selectedBooking);
+      setMessage("✅ Cập nhật thành công!");
+      setIsEditing(false);
+      setSelectedBooking(null);
+      fetchData();
+    } catch {
+      setMessage("❌ Lỗi khi cập nhật!");
+    }
+  };
+
+  // --- Hàm tiện ích ---
+  const formatPrice = (num) => num.toLocaleString("vi-VN") + " VND";
+
+  const translateStatus = {
+    pending: "Chờ xác nhận",
+    confirmed: "Đã xác nhận",
+    canceled: "Đã hủy",
+  };
+
+  const translatePayment = {
+    unpaid: "Chưa thanh toán",
+    paid: "Đã thanh toán",
+    refund: "Hoàn tiền",
+  };
+
+  // --- Phân trang ---
+  const paginatedBookings = bookings.slice((page - 1) * rowsPerPage, page * rowsPerPage);
+  const totalPages = Math.ceil(bookings.length / rowsPerPage);
+
   return (
     <div style={{ padding: 30, fontFamily: "Arial" }}>
-      <h2>📦 Quản lý đơn đặt tour</h2>
+      <h2>Quản lý đơn đặt tour</h2>
       {message && <p>{message}</p>}
 
-      {/* --- Form thêm mới --- */}
-      <form
-        onSubmit={handleAdd}
-        style={{
-          marginBottom: "30px",
-          padding: "15px",
-          border: "1px solid #ccc",
-          borderRadius: "8px",
-          maxWidth: 700,
-        }}
-      >
-        <h3>➕ Thêm đơn đặt mới</h3>
+      {/* --- Nút thêm mới --- */}
+      <Button variant="contained" color="primary" onClick={() => setOpenAdd(true)}>
+        Thêm đơn đặt mới
+      </Button>
 
-        <label>Khách hàng:</label>
-        <select
-          value={customerId}
-          onChange={(e) => setCustomerId(e.target.value)}
-          required
-          style={{ width: "100%", padding: "8px" }}
-        >
-          <option value="">-- Chọn khách hàng --</option>
-          {Array.isArray(customers) &&
-            customers.map((c, index) => (
-              <option key={c.id || `customer-${index}`} value={c.id}>
-                {c.full_name}
-              </option>
-            ))}
-        </select>
+      {/* --- Popup Thêm booking --- */}
+      <Dialog open={openAdd} onClose={() => setOpenAdd(false)}>
+        <DialogTitle>➕ Thêm đơn đặt mới</DialogTitle>
+        <DialogContent style={{ minWidth: 400 }}>
+          <FormControl fullWidth margin="dense">
+            <InputLabel>Khách hàng</InputLabel>
+            <Select
+              value={form.customer_id}
+              onChange={(e) => setForm({ ...form, customer_id: e.target.value })}
+              required
+            >
+              {customers.map((c) => (
+                <MenuItem key={c.id} value={c.id}>{c.full_name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-        <label>Tour:</label>
-        <select
-          value={tourId}
-          onChange={(e) => setTourId(e.target.value)}
-          required
-          style={{ width: "100%", padding: "8px" }}
-        >
-          <option value="">-- Chọn tour --</option>
-          {Array.isArray(tours) &&
-            tours.map((t, index) => (
-              <option key={t.id || `tour-${index}`} value={t.id}>
-                {t.title}
-              </option>
-            ))}
-        </select>
+          <FormControl fullWidth margin="dense">
+            <InputLabel>Tour</InputLabel>
+            <Select
+              value={form.tour_id}
+              onChange={(e) => setForm({ ...form, tour_id: e.target.value })}
+              required
+            >
+              {tours.map((t) => (
+                <MenuItem key={t.id} value={t.id}>{t.title}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-        <label>Số người lớn:</label>
-        <input
-          type="number"
-          value={qtyAdults}
-          min="1"
-          onChange={(e) => setQtyAdults(e.target.value)}
-          style={{ width: "100%", padding: "8px" }}
-        />
+          <TextField label="Người lớn" type="number" fullWidth margin="dense" value={form.qty_adults}
+            onChange={(e) => setForm({ ...form, qty_adults: e.target.value })} />
+          <TextField label="Trẻ em" type="number" fullWidth margin="dense" value={form.qty_children}
+            onChange={(e) => setForm({ ...form, qty_children: e.target.value })} />
+          <TextField label="Tổng tiền (VND)" type="number" fullWidth margin="dense" value={form.total_amount}
+            onChange={(e) => setForm({ ...form, total_amount: e.target.value })} />
 
-        <label>Số trẻ em:</label>
-        <input
-          type="number"
-          value={qtyChildren}
-          min="0"
-          onChange={(e) => setQtyChildren(e.target.value)}
-          style={{ width: "100%", padding: "8px" }}
-        />
+          <FormControl fullWidth margin="dense">
+            <InputLabel>Trạng thái</InputLabel>
+            <Select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+              <MenuItem value="pending">Chờ xác nhận</MenuItem>
+              <MenuItem value="confirmed">Đã xác nhận</MenuItem>
+              <MenuItem value="canceled">Đã hủy</MenuItem>
+            </Select>
+          </FormControl>
 
-        <label>Tổng tiền (VND):</label>
-        <input
-          type="number"
-          value={totalAmount}
-          onChange={(e) => setTotalAmount(e.target.value)}
-          style={{ width: "100%", padding: "8px" }}
-        />
+          <FormControl fullWidth margin="dense">
+            <InputLabel>Thanh toán</InputLabel>
+            <Select value={form.payment_status} onChange={(e) => setForm({ ...form, payment_status: e.target.value })}>
+              <MenuItem value="unpaid">Chưa thanh toán</MenuItem>
+              <MenuItem value="paid">Đã thanh toán</MenuItem>
+              <MenuItem value="refund">Hoàn tiền</MenuItem>
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenAdd(false)}>Hủy</Button>
+          <Button variant="contained" color="primary" onClick={handleAdd}>Thêm</Button>
+        </DialogActions>
+      </Dialog>
 
-        <label>Trạng thái:</label>
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          style={{ width: "100%", padding: "8px" }}
-        >
-          <option value="pending">Chờ xác nhận</option>
-          <option value="confirmed">Đã xác nhận</option>
-          <option value="canceled">Đã hủy</option>
-        </select>
+      {/* --- Popup xem chi tiết + edit --- */}
+      {selectedBooking && (
+        <Dialog open={!!selectedBooking} onClose={() => setSelectedBooking(null)} fullWidth maxWidth="sm">
+          <DialogTitle>{isEditing ? "✏️ Cập nhật đơn đặt" : "👁️ Xem chi tiết đơn đặt"}</DialogTitle>
+          <DialogContent dividers>
+            {isEditing ? (
+              <>
+                <FormControl fullWidth margin="dense">
+                  <InputLabel>Khách hàng</InputLabel>
+                  <Select
+                    value={selectedBooking.customer_id}
+                    onChange={(e) => setSelectedBooking({ ...selectedBooking, customer_id: e.target.value })}
+                  >
+                    {customers.map((c) => (
+                      <MenuItem key={c.id} value={c.id}>{c.full_name}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
 
-        <label>Thanh toán:</label>
-        <select
-          value={paymentStatus}
-          onChange={(e) => setPaymentStatus(e.target.value)}
-          style={{ width: "100%", padding: "8px" }}
-        >
-          <option value="unpaid">Chưa thanh toán</option>
-          <option value="paid">Đã thanh toán</option>
-          <option value="refund">Hoàn tiền</option>
-        </select>
+                <FormControl fullWidth margin="dense">
+                  <InputLabel>Tour</InputLabel>
+                  <Select
+                    value={selectedBooking.tour_id}
+                    onChange={(e) => setSelectedBooking({ ...selectedBooking, tour_id: e.target.value })}
+                  >
+                    {tours.map((t) => (
+                      <MenuItem key={t.id} value={t.id}>{t.title}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
 
-        <button
-          type="submit"
-          style={{
-            marginTop: 10,
-            padding: "10px 15px",
-            background: "#007bff",
-            color: "white",
-            border: "none",
-            borderRadius: "5px",
-          }}
-        >
-          Thêm đơn đặt
-        </button>
-      </form>
+                <TextField
+                  label="Người lớn"
+                  type="number"
+                  fullWidth
+                  margin="dense"
+                  value={selectedBooking.qty_adults}
+                  onChange={(e) => setSelectedBooking({ ...selectedBooking, qty_adults: e.target.value })}
+                />
+                <TextField
+                  label="Trẻ em"
+                  type="number"
+                  fullWidth
+                  margin="dense"
+                  value={selectedBooking.qty_children}
+                  onChange={(e) => setSelectedBooking({ ...selectedBooking, qty_children: e.target.value })}
+                />
+                <TextField
+                  label="Tổng tiền (VND)"
+                  type="number"
+                  fullWidth
+                  margin="dense"
+                  value={selectedBooking.total_amount}
+                  onChange={(e) => setSelectedBooking({ ...selectedBooking, total_amount: e.target.value })}
+                />
 
-      {/* --- Danh sách booking --- */}
-      <table
-        border="1"
-        cellPadding="8"
-        style={{ borderCollapse: "collapse", width: "100%" }}
-      >
+                <FormControl fullWidth margin="dense">
+                  <InputLabel>Trạng thái</InputLabel>
+                  <Select
+                    value={selectedBooking.status}
+                    onChange={(e) => setSelectedBooking({ ...selectedBooking, status: e.target.value })}
+                  >
+                    <MenuItem value="pending">Chờ xác nhận</MenuItem>
+                    <MenuItem value="confirmed">Đã xác nhận</MenuItem>
+                    <MenuItem value="canceled">Đã hủy</MenuItem>
+                  </Select>
+                </FormControl>
+
+                <FormControl fullWidth margin="dense">
+                  <InputLabel>Thanh toán</InputLabel>
+                  <Select
+                    value={selectedBooking.payment_status}
+                    onChange={(e) => setSelectedBooking({ ...selectedBooking, payment_status: e.target.value })}
+                  >
+                    <MenuItem value="unpaid">Chưa thanh toán</MenuItem>
+                    <MenuItem value="paid">Đã thanh toán</MenuItem>
+                    <MenuItem value="refund">Hoàn tiền</MenuItem>
+                  </Select>
+                </FormControl>
+              </>
+            ) : (
+              <>
+                <Typography><strong>ID:</strong> {selectedBooking.id}</Typography>
+                <Typography><strong>Khách hàng:</strong> {customers.find(c => c.id === selectedBooking.customer_id)?.full_name || "—"}</Typography>
+                <Typography><strong>Tour:</strong> {tours.find(t => t.id === selectedBooking.tour_id)?.title || "—"}</Typography>
+                <Typography><strong>Người lớn:</strong> {selectedBooking.qty_adults}</Typography>
+                <Typography><strong>Trẻ em:</strong> {selectedBooking.qty_children}</Typography>
+                <Typography><strong>Tổng tiền:</strong> {formatPrice(selectedBooking.total_amount)}</Typography>
+                <Typography><strong>Trạng thái:</strong> {translateStatus[selectedBooking.status]}</Typography>
+                <Typography><strong>Thanh toán:</strong> {translatePayment[selectedBooking.payment_status]}</Typography>
+              </>
+            )}
+          </DialogContent>
+          <DialogActions>
+            {isEditing ? (
+              <>
+                <Button onClick={() => setIsEditing(false)}>Quay lại</Button>
+                <Button variant="contained" color="primary" onClick={handleSave}>Lưu</Button>
+              </>
+            ) : (
+              <Button variant="contained" color="primary" onClick={() => setIsEditing(true)}>Cập nhật</Button>
+            )}
+          </DialogActions>
+        </Dialog>
+      )}
+
+      {/* --- Bảng danh sách --- */}
+      <table border="1" cellPadding="8" style={{ borderCollapse: "collapse", width: "100%", marginTop: 20 }}>
         <thead style={{ background: "#f0f0f0" }}>
           <tr>
             <th>ID</th>
@@ -217,128 +324,31 @@ export default function BookingManager() {
           </tr>
         </thead>
         <tbody>
-          {Array.isArray(bookings) &&
-            bookings.map((b, index) =>
-              editItem?.id === b.id ? (
-                <tr key={b.id || `edit-${index}`}>
-                  <td>{b.id}</td>
-                  <td>
-                    <select
-                      value={editItem.customer_id}
-                      onChange={(e) =>
-                        setEditItem({ ...editItem, customer_id: e.target.value })
-                      }
-                    >
-                      {customers.map((c, idx) => (
-                        <option key={c.id || `c-${idx}`} value={c.id}>
-                          {c.full_name}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td>
-                    <select
-                      value={editItem.tour_id}
-                      onChange={(e) =>
-                        setEditItem({ ...editItem, tour_id: e.target.value })
-                      }
-                    >
-                      {tours.map((t, idx) => (
-                        <option key={t.id || `t-${idx}`} value={t.id}>
-                          {t.title}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      value={editItem.qty_adults}
-                      onChange={(e) =>
-                        setEditItem({ ...editItem, qty_adults: e.target.value })
-                      }
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      value={editItem.qty_children}
-                      onChange={(e) =>
-                        setEditItem({
-                          ...editItem,
-                          qty_children: e.target.value,
-                        })
-                      }
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      value={editItem.total_amount}
-                      onChange={(e) =>
-                        setEditItem({
-                          ...editItem,
-                          total_amount: e.target.value,
-                        })
-                      }
-                    />
-                  </td>
-                  <td>
-                    <select
-                      value={editItem.status}
-                      onChange={(e) =>
-                        setEditItem({ ...editItem, status: e.target.value })
-                      }
-                    >
-                      <option value="pending">Chờ xác nhận</option>
-                      <option value="confirmed">Đã xác nhận</option>
-                      <option value="canceled">Đã hủy</option>
-                    </select>
-                  </td>
-                  <td>
-                    <select
-                      value={editItem.payment_status}
-                      onChange={(e) =>
-                        setEditItem({
-                          ...editItem,
-                          payment_status: e.target.value,
-                        })
-                      }
-                    >
-                      <option value="unpaid">Chưa thanh toán</option>
-                      <option value="paid">Đã thanh toán</option>
-                      <option value="refund">Hoàn tiền</option>
-                    </select>
-                  </td>
-                  <td>
-                    <button onClick={() => handleSave(b.id)}>💾</button>
-                    <button onClick={() => setEditItem(null)}>❌</button>
-                  </td>
-                </tr>
-              ) : (
-                <tr key={b.id || `row-${index}`}>
-                  <td>{b.id}</td>
-                  <td>
-                    {customers.find((c) => c.id === b.customer_id)?.full_name ||
-                      "—"}
-                  </td>
-                  <td>
-                    {tours.find((t) => t.id === b.tour_id)?.title || "—"}
-                  </td>
-                  <td>{b.qty_adults}</td>
-                  <td>{b.qty_children}</td>
-                  <td>{b.total_amount}</td>
-                  <td>{b.status}</td>
-                  <td>{b.payment_status}</td>
-                  <td>
-                    <button onClick={() => setEditItem(b)}>✏️</button>
-                    <button onClick={() => handleDelete(b.id)}>🗑️</button>
-                  </td>
-                </tr>
-              )
-            )}
+          {paginatedBookings.map((b) => (
+            <tr key={b.id}>
+              <td>{b.id}</td>
+              <td>{customers.find(c => c.id === b.customer_id)?.full_name || "—"}</td>
+              <td>{tours.find(t => t.id === b.tour_id)?.title || "—"}</td>
+              <td>{b.qty_adults}</td>
+              <td>{b.qty_children}</td>
+              <td>{formatPrice(b.total_amount)}</td>
+              <td>{translateStatus[b.status]}</td>
+              <td>{translatePayment[b.payment_status]}</td>
+              <td>
+                <Button size="small" onClick={() => openDetail(b)}>👁️</Button>
+                <Button size="small" color="error" onClick={() => handleDelete(b.id)}>🗑️</Button>
+              </td>
+            </tr>
+          ))}
         </tbody>
       </table>
+
+      {/* --- Phân trang --- */}
+      <div style={{ marginTop: 10 }}>
+        <Button disabled={page === 1} onClick={() => setPage(page - 1)}>« Trước</Button>
+        <span style={{ margin: "0 10px" }}>{page} / {totalPages}</span>
+        <Button disabled={page === totalPages} onClick={() => setPage(page + 1)}>Tiếp »</Button>
+      </div>
     </div>
   );
 }

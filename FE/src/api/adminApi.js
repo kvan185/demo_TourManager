@@ -47,17 +47,17 @@ const adminApi = {
   deleteBooking: (id) => axios.delete(`${BASE_URL}/bookings/${id}`),
   
   // Role & Permission management
-  getRoles: () => axios.get(`${BASE_URL}/roles`),
-  addRole: (data) => axios.post(`${BASE_URL}/roles`, data),
-  deleteRole: (id) => axios.delete(`${BASE_URL}/roles/${id}`),
+  getRoles: () => axios.get(`${BASE_URL}/role-permissions/roles`),
+  addRole: (data) => axios.post(`${BASE_URL}/role-permissions/roles`, data),
+  deleteRole: (id) => axios.delete(`${BASE_URL}/role-permissions/roles/${id}`),
 
-  getPermissions: () => axios.get(`${BASE_URL}/permissions`),
-  addPermission: (data) => axios.post(`${BASE_URL}/permissions`, data),
-  deletePermission: (id) => axios.delete(`${BASE_URL}/permissions/${id}`),
+  getPermissions: () => axios.get(`${BASE_URL}/role-permissions/permissions`),
+  addPermission: (data) => axios.post(`${BASE_URL}/role-permissions/permissions`, data),
+  deletePermission: (id) => axios.delete(`${BASE_URL}/role-permissions/permissions/${id}`),
 
-  getPermissionsByRole: (roleId) => axios.get(`${BASE_URL}/roles/${roleId}/permissions`),
+  getPermissionsByRole: (roleId) => axios.get(`${BASE_URL}/role-permissions/roles/${roleId}/permissions`),
   updateRolePermissions: (roleId, permission_ids) =>
-    axios.post(`${BASE_URL}/roles/${roleId}/permissions`, { permission_ids }),
+    axios.post(`${BASE_URL}/roles/${roleId}/role-permissions/permissions`, { permission_ids }),
   
   // 📸 Quản lý ảnh tour
   uploadTourImage: (tourId, data) =>
@@ -74,6 +74,22 @@ const adminApi = {
     }),
   getServiceImages: (id) => axios.get(`${BASE_URL}/services/${id}/images`),
   deleteServiceImage: (imgId) => axios.delete(`${BASE_URL}/services/image/${imgId}`),
+
+  // Payment
+  getPayments: () => axios.get(`${BASE_URL}/payments`),
+  getPaymentsByBooking: (bookingId) => axios.get(`${BASE_URL}/payments/booking/${bookingId}`),
+  addPayment: (data) => axios.post(`${BASE_URL}/payments/add-payment`, data),
+  updatePayment: (id, data) => axios.put(`${BASE_URL}/payments/${id}`, data),
+  deletePayment: (id) => axios.delete(`${BASE_URL}/payments/${id}`),
+
+  // ===== Review =====
+  getReviews: () => axios.get(`${BASE_URL}/reviews`),
+  getReviewsByTour: (tourId) => axios.get(`${BASE_URL}/reviews/tour/${tourId}`),
+  getReviewsByGuide: (guideId) => axios.get(`${BASE_URL}/reviews/guide/${guideId}`),
+  addReview: (data) => axios.post(`${BASE_URL}/reviews/add-review`, data),
+  updateReview: (id, data) => axios.put(`${BASE_URL}/reviews/${id}`, data),
+  deleteReview: (id) => axios.delete(`${BASE_URL}/reviews/${id}`),
   };
+  
 
 export default adminApi;

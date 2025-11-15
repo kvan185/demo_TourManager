@@ -1,26 +1,57 @@
 import React, { useEffect, useState } from "react";
 import adminApi from "../../api/adminApi";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
+  Typography,
+} from "@mui/material";
 
 export default function CustomerManager() {
   const [customers, setCustomers] = useState([]);
-  const [editItem, setEditItem] = useState(null);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [openDialog, setOpenDialog] = useState(false);
 
-  // 🧩 Form thêm mới
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [gender, setGender] = useState("other");
-  const [address, setAddress] = useState("");
-  const [note, setNote] = useState("");
+  // Form dữ liệu
+  const [formData, setFormData] = useState({
+    full_name: "",
+    email: "",
+    phone: "",
+    gender: "other",
+    address: "",
+    note: "",
+  });
 
-  // 🔹 Lấy danh sách khách hàng
+  // --- Phân trang ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 7;
+
+  // --- Tìm kiếm ---
+  const [searchBasic, setSearchBasic] = useState("");
+  const [searchGender, setSearchGender] = useState("");
+  const [searchPhone, setSearchPhone] = useState("");
+  const [searchAddress, setSearchAddress] = useState("");
+
+  // --- Lấy danh sách khách hàng ---
   const fetchData = async () => {
     try {
       const res = await adminApi.getCustomers();
       setCustomers(res.data || []);
+      if (currentPage > Math.ceil((res.data?.length || 0) / itemsPerPage)) {
+        setCurrentPage(1);
+      }
     } catch (err) {
       console.error("❌ Lỗi tải khách hàng:", err);
+      toast.error("❌ Lỗi tải danh sách khách hàng!");
     }
   };
 
@@ -28,59 +59,7 @@ export default function CustomerManager() {
     fetchData();
   }, []);
 
-  // 🔹 Thêm khách hàng
-  const handleAdd = async (e) => {
-    e.preventDefault();
-
-    if (!fullName.trim() || !email.trim()) {
-      toast.error("⚠️ Vui lòng nhập họ tên và email!");
-      return;
-    }
-
-    try {
-      await adminApi.addCustomer({
-        full_name: fullName,
-        email,
-        phone,
-        gender,
-        address,
-        note,
-      });
-      toast.success("✅ Thêm khách hàng thành công!");
-      setFullName("");
-      setEmail("");
-      setPhone("");
-      setGender("other");
-      setAddress("");
-      setNote("");
-      fetchData();
-    } catch (err) {
-      toast.error("❌ " + (err.response?.data?.message || "Không thể thêm khách hàng"));
-    }
-  };
-
-  // 🔹 Lưu cập nhật
-  const handleSave = async (id) => {
-    try {
-      await adminApi.updateCustomer(id, editItem);
-      toast.success("✅ Cập nhật thành công!");
-      setEditItem(null);
-      fetchData();
-    } catch {
-      toast.error("❌ Lỗi khi cập nhật!");
-    }
-  };
-
-  // 🔹 Xóa khách hàng
-  const handleDelete = async (id) => {
-    if (window.confirm("Bạn có chắc muốn xóa khách hàng này?")) {
-      await adminApi.deleteCustomer(id);
-      toast.success("🗑️ Đã xóa khách hàng!");
-      fetchData();
-    }
-  };
-
-  // 🔹 Hiển thị giới tính tiếng Việt
+  // --- Hiển thị giới tính ---
   const displayGender = (g) => {
     if (!g) return "Khác";
     const lower = g.toLowerCase();
@@ -89,7 +68,6 @@ export default function CustomerManager() {
     return "Khác";
   };
 
-  // 🔹 Định dạng ngày đẹp
   const formatDate = (dateString) => {
     if (!dateString) return "—";
     const date = new Date(dateString);
@@ -102,189 +80,274 @@ export default function CustomerManager() {
     });
   };
 
+  // --- Lọc khách hàng ---
+  const filteredCustomers = customers.filter((c) => {
+    const matchBasic =
+      c.full_name.toLowerCase().includes(searchBasic.toLowerCase()) ||
+      c.email.toLowerCase().includes(searchBasic.toLowerCase());
+
+    const matchGender = searchGender ? c.gender === searchGender : true;
+    const matchPhone = searchPhone ? (c.phone || "").includes(searchPhone) : true;
+    const matchAddress = searchAddress
+      ? (c.address || "").toLowerCase().includes(searchAddress.toLowerCase())
+      : true;
+
+    return matchBasic && matchGender && matchPhone && matchAddress;
+  });
+
+  // --- Phân trang ---
+  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
+  const startIdx = (currentPage - 1) * itemsPerPage;
+  const currentCustomers = filteredCustomers.slice(startIdx, startIdx + itemsPerPage);
+
+  // --- Xử lý thêm / sửa ---
+  const openAddDialog = () => {
+    setFormData({ full_name: "", email: "", phone: "", gender: "other", address: "", note: "" });
+    setSelectedCustomer(null);
+    setIsEditing(true);
+    setOpenDialog(true);
+  };
+
+  const openEditDialog = (customer) => {
+    setFormData({ ...customer });
+    setSelectedCustomer(customer);
+    setIsEditing(true);
+    setOpenDialog(true);
+  };
+
+  const handleSave = async () => {
+    if (!formData.full_name.trim() || !formData.email.trim()) {
+      toast.error("⚠️ Họ tên và email không được để trống!");
+      return;
+    }
+    try {
+      if (selectedCustomer) {
+        // Cập nhật
+        await adminApi.updateCustomer(selectedCustomer.id, formData);
+        toast.success("✅ Cập nhật khách hàng thành công!");
+      } else {
+        // Thêm mới
+        await adminApi.addCustomer(formData);
+        toast.success("✅ Thêm khách hàng thành công!");
+      }
+      setOpenDialog(false);
+      fetchData();
+    } catch (err) {
+      toast.error("❌ " + (err.response?.data?.message || "Không thể lưu khách hàng"));
+    }
+  };
+
+  // --- Xóa ---
+  const handleDelete = async (id) => {
+    if (window.confirm("Bạn có chắc muốn xóa khách hàng này?")) {
+      try {
+        await adminApi.deleteCustomer(id);
+        toast.success("🗑️ Đã xóa khách hàng!");
+        fetchData();
+      } catch (err) {
+        toast.error("❌ Xóa thất bại!");
+      }
+    }
+  };
+
   return (
-    <div>
-      <div style={{ padding: 30, fontFamily: "Arial" }}>
-        <h2>👤 Quản lý khách hàng</h2>
+    <div style={{ padding: 30, fontFamily: "Arial" }}>
+      <h2>Quản lý khách hàng</h2>
 
-        {/* --- Form thêm mới --- */}
-        <form
-          onSubmit={handleAdd}
-          style={{
-            marginBottom: "30px",
-            padding: "15px",
-            border: "1px solid #ccc",
-            borderRadius: "8px",
-            maxWidth: 600,
-            background: "#fafafa",
+      <Button variant="contained" color="success" style={{ marginBottom: 20 }} onClick={openAddDialog}>
+        Thêm khách hàng mới
+      </Button>
+
+      {/* --- Tìm kiếm --- */}
+      <div style={{ display: "flex", gap: 10, marginBottom: 15, flexWrap: "wrap" }}>
+        <TextField
+          label="Tìm kiếm Họ tên / Email"
+          value={searchBasic}
+          onChange={(e) => {
+            setSearchBasic(e.target.value);
+            setCurrentPage(1);
           }}
-        >
-          <h3>➕ Thêm khách hàng mới</h3>
-
-          <label>Họ tên:</label>
-          <input
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            required
-            placeholder="Nhập họ tên"
-            style={{ width: "100%", padding: "8px", marginBottom: 8 }}
-          />
-
-          <label>Email:</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            placeholder="Nhập email"
-            style={{ width: "100%", padding: "8px", marginBottom: 8 }}
-          />
-
-          <label>Điện thoại:</label>
-          <input
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="Nhập số điện thoại"
-            style={{ width: "100%", padding: "8px", marginBottom: 8 }}
-          />
-
-          <label>Giới tính:</label>
-          <select
-            value={gender}
-            onChange={(e) => setGender(e.target.value)}
-            style={{ width: "100%", padding: "8px", marginBottom: 8 }}
-          >
-            <option value="male">Nam</option>
-            <option value="female">Nữ</option>
-            <option value="other">Khác</option>
-          </select>
-
-          <label>Địa chỉ:</label>
-          <input
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="Nhập địa chỉ"
-            style={{ width: "100%", padding: "8px", marginBottom: 8 }}
-          />
-
-          <label>Ghi chú:</label>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Ghi chú (nếu có)"
-            style={{ width: "100%", padding: "8px", marginBottom: 8 }}
-          />
-
-          <button
-            type="submit"
-            style={{
-              marginTop: 10,
-              padding: "10px 15px",
-              background: "#007bff",
-              color: "white",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
+          size="small"
+        />
+        <FormControl variant="outlined" size="small">
+          <InputLabel>Giới tính</InputLabel>
+          <Select
+            value={searchGender}
+            onChange={(e) => {
+              setSearchGender(e.target.value);
+              setCurrentPage(1);
             }}
+            label="Giới tính"
+            style={{ width: 120 }}
           >
-            ➕ Thêm khách hàng
-          </button>
-        </form>
-
-        {/* --- Danh sách khách hàng --- */}
-        <table
-          border="1"
-          cellPadding="8"
-          style={{
-            borderCollapse: "collapse",
-            width: "100%",
-            background: "white",
+            <MenuItem value="">Tất cả</MenuItem>
+            <MenuItem value="male">Nam</MenuItem>
+            <MenuItem value="female">Nữ</MenuItem>
+            <MenuItem value="other">Khác</MenuItem>
+          </Select>
+        </FormControl>
+        <TextField
+          label="Điện thoại"
+          value={searchPhone}
+          onChange={(e) => {
+            setSearchPhone(e.target.value);
+            setCurrentPage(1);
+          }}
+          size="small"
+        />
+        <TextField
+          label="Địa chỉ"
+          value={searchAddress}
+          onChange={(e) => {
+            setSearchAddress(e.target.value);
+            setCurrentPage(1);
+          }}
+          size="small"
+        />
+        <Button
+          variant="outlined"
+          color="secondary"
+          onClick={() => {
+            setSearchBasic("");
+            setSearchGender("");
+            setSearchPhone("");
+            setSearchAddress("");
+            setCurrentPage(1);
           }}
         >
-          <thead style={{ background: "#f0f0f0" }}>
-            <tr>
-              <th>ID</th>
-              <th>Email</th>
-              <th>Họ tên</th>
-              <th>Điện thoại</th>
-              <th>Giới tính</th>
-              <th>Địa chỉ</th>
-              <th>Ghi chú</th>
-              <th>Ngày tạo</th>
-              <th>Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
-            {customers.map((c) => {
-              const id = c.customer_id || c.id;
-              const isEditing = editItem?.customer_id === id;
+          🧹 Xóa lọc
+        </Button>
+      </div>
 
+      {/* --- Bảng --- */}
+      <table border="1" cellPadding="8" style={{ borderCollapse: "collapse", width: "100%", background: "white" }}>
+        <thead style={{ background: "#f0f0f0" }}>
+          <tr>
+            <th>ID</th>
+            <th>Email</th>
+            <th>Họ tên</th>
+            <th>Điện thoại</th>
+            <th>Giới tính</th>
+            <th>Địa chỉ</th>
+            <th>Ghi chú</th>
+            <th>Ngày tạo</th>
+            <th>Hành động</th>
+          </tr>
+        </thead>
+        <tbody>
+          {currentCustomers.length === 0 ? (
+            <tr>
+              <td colSpan="9" style={{ textAlign: "center" }}>
+                Không có dữ liệu
+              </td>
+            </tr>
+          ) : (
+            currentCustomers.map((c) => {
+              const id = c.customer_id || c.id;
               return (
                 <tr key={`customer-${id}`}>
                   <td>{id}</td>
                   <td>{c.email}</td>
-                  <td>
-                    {isEditing ? (
-                      <input
-                        value={editItem.full_name || ""}
-                        onChange={(e) =>
-                          setEditItem({ ...editItem, full_name: e.target.value })
-                        }
-                      />
-                    ) : (
-                      c.full_name
-                    )}
-                  </td>
-                  <td>
-                    {isEditing ? (
-                      <input
-                        value={editItem.phone || ""}
-                        onChange={(e) =>
-                          setEditItem({ ...editItem, phone: e.target.value })
-                        }
-                      />
-                    ) : (
-                      c.phone
-                    )}
-                  </td>
-                  <td>
-                    {isEditing ? (
-                      <select
-                        value={editItem.gender || "other"}
-                        onChange={(e) =>
-                          setEditItem({ ...editItem, gender: e.target.value })
-                        }
-                      >
-                        <option value="male">Nam</option>
-                        <option value="female">Nữ</option>
-                        <option value="other">Khác</option>
-                      </select>
-                    ) : (
-                      displayGender(c.gender)
-                    )}
-                  </td>
+                  <td>{c.full_name}</td>
+                  <td>{c.phone}</td>
+                  <td>{displayGender(c.gender)}</td>
                   <td>{c.address}</td>
                   <td>{c.note}</td>
                   <td>{formatDate(c.created_at)}</td>
                   <td>
-                    {isEditing ? (
-                      <>
-                        <button onClick={() => handleSave(id)}>💾</button>
-                        <button onClick={() => setEditItem(null)}>❌</button>
-                      </>
-                    ) : (
-                      <>
-                        <button onClick={() => setEditItem(c)}>✏️</button>
-                        <button onClick={() => handleDelete(id)}>🗑️</button>
-                      </>
-                    )}
+                    <Button onClick={() => openEditDialog(c)} variant="outlined">
+                      👁️ / ✏️
+                    </Button>
+                    <Button color="error" onClick={() => handleDelete(id)}>
+                      🗑️
+                    </Button>
                   </td>
                 </tr>
               );
-            })}
-          </tbody>
-        </table>
+            })
+          )}
+        </tbody>
+      </table>
+
+      {/* --- Phân trang --- */}
+      <div style={{ marginTop: 15, display: "flex", alignItems: "center", gap: 10 }}>
+        <Button disabled={currentPage === 1} variant="outlined" onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}>
+          ◀️ Prev
+        </Button>
+        <Typography>
+          Trang {currentPage} / {totalPages || 1}
+        </Typography>
+        <Button
+          disabled={currentPage === totalPages || totalPages === 0}
+          variant="outlined"
+          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+        >
+          Next ▶️
+        </Button>
       </div>
+
+      {/* --- Dialog Thêm / Sửa --- */}
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} fullWidth maxWidth="sm">
+        <DialogTitle>{selectedCustomer ? "✏️ Cập nhật khách hàng" : "➕ Thêm khách hàng mới"}</DialogTitle>
+        <DialogContent dividers>
+          <TextField
+            label="Họ tên"
+            value={formData.full_name}
+            onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+            fullWidth
+            margin="dense"
+            required
+          />
+          <TextField
+            label="Email"
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            fullWidth
+            margin="dense"
+            required
+          />
+          <TextField
+            label="Điện thoại"
+            value={formData.phone}
+            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            fullWidth
+            margin="dense"
+          />
+          <FormControl fullWidth margin="dense">
+            <InputLabel>Giới tính</InputLabel>
+            <Select value={formData.gender} onChange={(e) => setFormData({ ...formData, gender: e.target.value })}>
+              <MenuItem value="male">Nam</MenuItem>
+              <MenuItem value="female">Nữ</MenuItem>
+              <MenuItem value="other">Khác</MenuItem>
+            </Select>
+          </FormControl>
+          <TextField
+            label="Địa chỉ"
+            value={formData.address}
+            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            fullWidth
+            margin="dense"
+          />
+          <TextField
+            label="Ghi chú"
+            value={formData.note}
+            onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+            fullWidth
+            margin="dense"
+            multiline
+            rows={2}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDialog(false)} color="secondary">
+            Hủy
+          </Button>
+          <Button variant="contained" color="primary" onClick={handleSave}>
+            Lưu
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }
