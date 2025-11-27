@@ -4,6 +4,66 @@ import fs from "fs";
 const uploadDir = "uploads/tours";
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
+
+/* ------------------------------------------------------------------
+  Hàm tạo prefix từ tên location
+  Hà Nội => HN, Đà Nẵng => DN, Hồ Chí Minh => HCM
+-------------------------------------------------------------------*/
+function locationToPrefix(name) {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // bỏ dấu tiếng Việt
+    .split(" ")
+    .map(w => w[0].toUpperCase())
+    .join("");
+}
+
+/* ------------------------------------------------------------------
+  Sinh mã tour theo location
+  VD: DN01, DN02, HN01, HN02 ...
+-------------------------------------------------------------------*/
+async function generateTourCode(main_location_id) {
+  // Lấy tên location
+  const [loc] = await pool.query(
+    "SELECT name FROM locations WHERE id = ? LIMIT 1",
+    [main_location_id]
+  );
+
+  if (loc.length === 0) {
+    throw new Error("Location không tồn tại");
+  }
+
+  const locationName = loc[0].name;
+
+  // Tạo prefix
+  const prefix = locationToPrefix(locationName); // VD: 'DN'
+
+  // Lấy mã lớn nhất theo prefix
+  const [rows] = await pool.query(
+    `
+      SELECT code 
+      FROM tours 
+      WHERE code LIKE ? 
+      ORDER BY code DESC 
+      LIMIT 1
+    `,
+    [`${prefix}%`]
+  );
+
+  let nextNumber = 1;
+
+  if (rows.length > 0) {
+    // Lấy phần số của mã cuối cùng: VD DN03 -> 3
+    const lastCode = rows[0].code;
+    const numberPart = parseInt(lastCode.replace(prefix, ""), 10);
+    nextNumber = numberPart + 1;
+  }
+
+  // Format thành 2 số: 01, 02...
+  const formatted = String(nextNumber).padStart(2, "0");
+  return `${prefix}${formatted}`;
+}
+
 // ===== TOURS =====
 
 // Lấy danh sách tour
@@ -30,7 +90,8 @@ export const addTour = async (req, res) => {
 
   try {
     const [result] = await pool.query(
-      `INSERT INTO tours (code, title, short_description, price, duration_days, main_location_id, status)
+      `INSERT INTO tours 
+       (code, title, short_description, price, duration_days, main_location_id, status)
        VALUES (?, ?, ?, ?, ?, ?, 'draft')`,
       [code || null, title, short_description || null, price, duration_days || 1, main_location_id || null]
     );

@@ -256,7 +256,7 @@ export default function CustomerManager() {
                   <td>{formatDate(c.created_at)}</td>
                   <td>
                     <Button onClick={() => openEditDialog(c)} variant="outlined">
-                      👁️ / ✏️
+                      👁️Xem
                     </Button>
                     <Button color="error" onClick={() => handleDelete(id)}>
                       🗑️

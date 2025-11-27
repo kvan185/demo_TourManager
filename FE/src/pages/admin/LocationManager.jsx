@@ -157,33 +157,6 @@ export default function LocationManager() {
           onChange={(e) => { setSearchBasic(e.target.value); setCurrentPage(1); }}
           size="small"
         />
-        <FormControl size="small" style={{ minWidth: 120 }}>
-          <InputLabel>Loại</InputLabel>
-          <Select
-            value={searchType}
-            onChange={(e) => { setSearchType(e.target.value); setCurrentPage(1); }}
-            label="Loại"
-          >
-            <MenuItem value="">Tất cả</MenuItem>
-            <MenuItem value="food">Thức ăn</MenuItem>
-            <MenuItem value="drink">Đồ uống</MenuItem>
-            <MenuItem value="other">Khác</MenuItem>
-          </Select>
-        </FormControl>
-        <TextField
-          label="Giá min"
-          value={searchPriceMin}
-          onChange={(e) => { setSearchPriceMin(e.target.value); setCurrentPage(1); }}
-          size="small"
-          type="number"
-        />
-        <TextField
-          label="Giá max"
-          value={searchPriceMax}
-          onChange={(e) => { setSearchPriceMax(e.target.value); setCurrentPage(1); }}
-          size="small"
-          type="number"
-        />
         <Button
           variant="outlined"
           color="secondary"
@@ -203,8 +176,7 @@ export default function LocationManager() {
             <th>Tên</th>
             <th>Vùng</th>
             <th>Quốc gia</th>
-            <th>Loại</th>
-            <th>Giá</th>
+            <th>Mô tả</th>
             <th>Hành động</th>
           </tr>
         </thead>
@@ -215,8 +187,7 @@ export default function LocationManager() {
               <td>{loc.name}</td>
               <td>{loc.region}</td>
               <td>{loc.country}</td>
-              <td>{translateType(loc.type)}</td>
-              <td>{formatPrice(loc.price)}</td>
+              <td>{loc.description}</td>
               <td>
                 <Button onClick={() => openDetail(loc)}>👁️ Xem</Button>
                 <Button color="error" onClick={() => handleDelete(loc.id)}>🗑️ Xóa</Button>
@@ -251,15 +222,6 @@ export default function LocationManager() {
           <TextField label="Quốc gia" value={country} onChange={(e) => setCountry(e.target.value)} fullWidth margin="dense" />
           <TextField label="Vùng" value={region} onChange={(e) => setRegion(e.target.value)} fullWidth margin="dense" />
           <TextField label="Mô tả" value={description} onChange={(e) => setDescription(e.target.value)} fullWidth margin="dense" multiline rows={3} />
-          <FormControl fullWidth margin="dense">
-            <InputLabel>Loại</InputLabel>
-            <Select value={type} onChange={(e) => setType(e.target.value)}>
-              <MenuItem value="food">Thức ăn</MenuItem>
-              <MenuItem value="drink">Đồ uống</MenuItem>
-              <MenuItem value="other">Khác</MenuItem>
-            </Select>
-          </FormControl>
-          <TextField label="Giá" value={price} onChange={(e) => setPrice(e.target.value)} fullWidth margin="dense" type="number"/>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenAddDialog(false)}>Hủy</Button>
@@ -299,24 +261,6 @@ export default function LocationManager() {
                   fullWidth margin="dense"
                   multiline rows={3}
                 />
-                <FormControl fullWidth margin="dense">
-                  <InputLabel>Loại</InputLabel>
-                  <Select
-                    value={selectedLoc.type || "other"}
-                    onChange={(e) => setSelectedLoc({ ...selectedLoc, type: e.target.value })}
-                  >
-                    <MenuItem value="food">Thức ăn</MenuItem>
-                    <MenuItem value="drink">Đồ uống</MenuItem>
-                    <MenuItem value="other">Khác</MenuItem>
-                  </Select>
-                </FormControl>
-                <TextField
-                  label="Giá"
-                  value={selectedLoc.price || ""}
-                  onChange={(e) => setSelectedLoc({ ...selectedLoc, price: e.target.value })}
-                  fullWidth margin="dense"
-                  type="number"
-                />
               </>
             ) : (
               <>
@@ -325,8 +269,6 @@ export default function LocationManager() {
                 <Typography><strong>Quốc gia:</strong> {selectedLoc.country}</Typography>
                 <Typography><strong>Vùng:</strong> {selectedLoc.region}</Typography>
                 <Typography><strong>Mô tả:</strong> {selectedLoc.description}</Typography>
-                <Typography><strong>Loại:</strong> {translateType(selectedLoc.type)}</Typography>
-                <Typography><strong>Giá:</strong> {formatPrice(selectedLoc.price)}</Typography>
               </>
             )}
           </DialogContent>
